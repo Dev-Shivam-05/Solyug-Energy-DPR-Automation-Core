@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════
+   SOLARIS ULTIMATE — Clean, High-Fidelity Architectural Simulator
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  *, *::before, *::after {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html {
+    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background: #06090e;
+    color: #f1f5f9;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+}
+
+/* Custom minimal scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 165, 233, 0.2);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 165, 233, 0.4);
+}
+
+/* Number input spinners cleanup */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input::placeholder {
+  color: rgba(148, 163, 184, 0.25);
+  font-weight: 300;
+}
+
+*:focus-visible {
+  outline: 2px solid rgba(14, 165, 233, 0.5);
+  outline-offset: 1px;
+}
+
+@layer components {
+  /* Sleek glassmorphic card for a clean single-form overlay */
+  .config-glass-card {
+    backdrop-filter: blur(24px) saturate(1.4);
+    background: rgba(10, 15, 30, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 
+      0 24px 64px -16px rgba(0, 0, 0, 0.8),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+    border-radius: 1.5rem;
+  }
+
+  /* Minimal inputs with light border glow on focus */
+  .config-input-wrapper {
+    @apply relative flex items-center w-full;
+  }
+  .config-input {
+    @apply w-full rounded-xl pl-4 pr-12 py-3 text-sm transition-all duration-300;
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .config-input:hover {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  .config-input:focus {
+    outline: none;
+    background: rgba(15, 23, 42, 0.95);
+    border-color: rgba(14, 165, 233, 0.5);
+    box-shadow: 
+      0 0 0 1px rgba(14, 165, 233, 0.5),
+      0 0 16px 0 rgba(14, 165, 233, 0.15);
+  }
+
+  /* Clean label badge statuses */
+  .field-status-badge {
+    @apply text-[9px] px-2 py-0.5 rounded-full font-mono tracking-wider transition-all duration-300;
+  }
+  .badge-requesting {
+    background: rgba(14, 165, 233, 0.08);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    color: rgba(14, 165, 233, 0.85);
+  }
+  .badge-typing {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: rgba(245, 158, 11, 0.85);
+  }
+  .badge-ready {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: rgba(16, 185, 129, 0.85);
+  }
+
+  /* Premium Blue Estimate Button */
+  .btn-estimate {
+    @apply w-full font-bold text-sm py-3.5 px-6 rounded-xl relative overflow-hidden transition-all duration-300 uppercase tracking-wider;
+    color: #ffffff;
+    background: linear-gradient(135deg, #0284c7, #0ea5e9);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 20px -2px rgba(14, 165, 233, 0.35);
+  }
+  .btn-estimate:hover {
+    background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+    border-color: rgba(14, 165, 233, 0.5);
+    box-shadow: 
+      0 6px 28px -2px rgba(14, 165, 233, 0.55),
+      0 0 16px 2px rgba(14, 165, 233, 0.2);
+    transform: translateY(-1px);
+  }
+  .btn-estimate:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 12px -2px rgba(14, 165, 233, 0.25);
+  }
+
+  /* Compact stat layout block inside the configuration card */
+  .compact-stat-card {
+    @apply p-3.5 rounded-xl transition-all duration-300 border flex flex-col justify-between;
+    background: rgba(15, 23, 42, 0.45);
+    border-color: rgba(255, 255, 255, 0.04);
+  }
+  .compact-stat-card:hover {
+    background: rgba(15, 23, 42, 0.65);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* CSS animations for custom entry behaviors */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-slide-up {
+  animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
