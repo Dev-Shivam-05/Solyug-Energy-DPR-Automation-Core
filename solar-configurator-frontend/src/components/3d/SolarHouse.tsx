@@ -607,7 +607,7 @@ const RooftopFeasibilityGrid: React.FC = () => {
    ═══════════════════════════════════════════════════════════════ */
 const GrassField: React.FC = () => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const count = 1800; // Draw 1,800 lush 3D grass particles in one GPU draw call
+  const count = 2600; // Increased to 2,600 dense grass blade particles for absolute organic yard grounding
 
   // Dummy Object3D to update instance matrices
   const tempObject = useMemo(() => new THREE.Object3D(), []);
@@ -618,31 +618,35 @@ const GrassField: React.FC = () => {
     const rand = Math.random;
 
     for (let i = 0; i < count; i++) {
-      // Distribute in the front and side yards
-      let x = (rand() - 0.5) * 12.5;
-      let z = 0.5 + rand() * 5.5;
+      // Base distribution across front and side yards
+      let x = (rand() - 0.5) * 13.0;
+      let z = 0.5 + rand() * 5.6;
 
-      // Coordinate collision checks to avoid growing inside concrete surfaces
+      // Coordinate checks
       const inStairs = x > -2.7 && x < -0.9 && z > 2.9 && z < 3.6;
       const inWalkway = x > -2.0 && x < -0.8 && z > 3.6 && z < 6.5;
       const inPlanter1 = x > -1.0 && x < -0.2 && z > 2.7 && z < 3.5;
       const inPlanter2 = x > -4.0 && x < -2.6 && z > 2.0 && z < 2.6;
       const inHouse = x > -4.1 && x < 3.9 && z > -2.9 && z < 2.5;
 
+      // Realism tweak: We deliberately cluster grass close to the edge borders of pathways/planters
       if (inStairs || inWalkway || inPlanter1 || inPlanter2 || inHouse) {
-        // Push instances slightly outward into the lawn soil zones
-        x += (rand() > 0.5 ? 1.5 : -1.5) * 1.2;
-        z += (rand() > 0.5 ? 1.5 : -1.5) * 1.2;
+        // Instead of random scattering, push them exactly to the margins of these concrete shapes
+        // This generates thick grass tufts immediately framing all hard concrete edges!
+        const pushX = rand() > 0.5 ? 1.0 : -1.0;
+        const pushZ = rand() > 0.5 ? 1.0 : -1.0;
+        x += pushX * 0.45;
+        z += pushZ * 0.45;
       }
 
-      const scaleY = 0.15 + rand() * 0.22; // Height: 15cm to 37cm
-      const scaleX = 0.015 + rand() * 0.018; // Width
+      const scaleY = 0.16 + rand() * 0.24; // Organic height: 16cm to 40cm
+      const scaleX = 0.012 + rand() * 0.015; // Width
       
       // Stand base exactly on the grass plane at Y = -0.21
       const y = -0.21 + scaleY / 2;
       
       const rotY = rand() * Math.PI;
-      const rotX = (rand() - 0.5) * 0.18; // Organic initial lean angle
+      const rotX = (rand() - 0.5) * 0.25; // Organic initial lean angle
 
       data.push({ x, y, z, scaleX, scaleY, rotX, rotY });
     }
@@ -663,10 +667,10 @@ const GrassField: React.FC = () => {
     for (let i = 0; i < count; i++) {
       const r = Math.random();
       let selected;
-      if (r < 0.35) selected = palette[0];
-      else if (r < 0.72) selected = palette[1];
-      else if (r < 0.88) selected = palette[2];
-      else if (r < 0.95) selected = palette[4];
+      if (r < 0.38) selected = palette[0];
+      else if (r < 0.74) selected = palette[1];
+      else if (r < 0.89) selected = palette[2];
+      else if (r < 0.96) selected = palette[4];
       else selected = palette[3];
       
       bladeColors.push(selected);
@@ -699,10 +703,11 @@ const GrassField: React.FC = () => {
     const time = state.clock.getElapsedTime();
     
     instances.forEach((item, idx) => {
-      // Wind sine wave flowing from left to right modulated by spatial coordinate X
-      const windAngle = Math.sin(time * 2.5 + item.x * 0.45) * 0.08;
+      // Wind wave equation based on time and spatial X coordinate
+      const windAngle = Math.sin(time * 2.8 + item.x * 0.4) * 0.095;
       
       tempObject.position.set(item.x, item.y, item.z);
+      // Wind sway on X/Z coordinates
       tempObject.rotation.set(item.rotX + windAngle, item.rotY, windAngle * 0.5);
       tempObject.scale.set(item.scaleX, item.scaleY, item.scaleX);
       tempObject.updateMatrix();
@@ -717,7 +722,7 @@ const GrassField: React.FC = () => {
       {/* Blade Geometry: beveled thin plane geometry */}
       <planeGeometry args={[1, 1, 1, 3]} />
       <meshStandardMaterial 
-        roughness={0.9} 
+        roughness={0.95} 
         side={THREE.DoubleSide} 
         shadowSide={THREE.DoubleSide}
       />
