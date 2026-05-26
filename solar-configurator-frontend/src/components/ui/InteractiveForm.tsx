@@ -6,6 +6,7 @@ interface Props {
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
   metrics: SolarMetrics;
   onCalculate: () => void;
+  onDownloadPDF: () => void;
   isCalculated: boolean;
   isCalculating: boolean;
 }
@@ -15,6 +16,7 @@ export const InteractiveForm: React.FC<Props> = ({
   setFormData, 
   metrics, 
   onCalculate, 
+  onDownloadPDF,
   isCalculated, 
   isCalculating 
 }) => {
@@ -40,6 +42,8 @@ export const InteractiveForm: React.FC<Props> = ({
   };
 
   const isFormValid = formData.name.trim().length > 0 && 
+                      formData.email.trim().length > 0 && 
+                      formData.phone.trim().length > 0 && 
                       formData.monthlyBill.trim().length > 0 && 
                       formData.roofSpace.trim().length > 0;
 
@@ -91,45 +95,81 @@ export const InteractiveForm: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 2. Location Input */}
+        {/* 2. Email Input */}
         <div>
           <div className="flex justify-between items-center mb-1.5">
-            <label htmlFor="f-city" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
-              Project Location
+            <label htmlFor="f-email" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
+              Email Address
             </label>
             <span className={`field-status-badge ${
-              getFieldStatus('city', formData.city) === 'READY ✓' ? 'badge-ready' :
-              getFieldStatus('city', formData.city) === 'TYPING...' ? 'badge-typing' :
+              getFieldStatus('email', formData.email) === 'READY ✓' ? 'badge-ready' :
+              getFieldStatus('email', formData.email) === 'TYPING...' ? 'badge-typing' :
               'badge-requesting'
             }`}>
-              {getFieldStatus('city', formData.city)}
+              {getFieldStatus('email', formData.email)}
             </span>
           </div>
           <div className="config-input-wrapper">
             <input
-              id="f-city"
-              type="text"
-              name="city"
-              value={formData.city}
+              id="f-email"
+              type="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
-              onFocus={() => handleFocus('city')}
+              onFocus={() => handleFocus('email')}
               onBlur={handleBlur}
-              placeholder="Navsari, Gujarat"
+              placeholder="e.g. rahul@example.com"
               className="config-input"
               autoComplete="off"
               spellCheck={false}
             />
-            {/* Location Pin Suffix */}
+            {/* Email Icon Suffix */}
             <div className="absolute right-4 flex items-center pointer-events-none text-slate-500">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
           </div>
         </div>
 
-        {/* 3. Monthly Bill Input */}
+        {/* 3. Phone Input */}
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <label htmlFor="f-phone" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
+              Phone Number
+            </label>
+            <span className={`field-status-badge ${
+              getFieldStatus('phone', formData.phone) === 'READY ✓' ? 'badge-ready' :
+              getFieldStatus('phone', formData.phone) === 'TYPING...' ? 'badge-typing' :
+              'badge-requesting'
+            }`}>
+              {getFieldStatus('phone', formData.phone)}
+            </span>
+          </div>
+          <div className="config-input-wrapper">
+            <input
+              id="f-phone"
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              onFocus={() => handleFocus('phone')}
+              onBlur={handleBlur}
+              placeholder="e.g. +91 98765 43210"
+              className="config-input"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            {/* Phone Icon Suffix */}
+            <div className="absolute right-4 flex items-center pointer-events-none text-slate-500">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Monthly Bill Input */}
         <div>
           <div className="flex justify-between items-center mb-1.5">
             <label htmlFor="f-monthlyBill" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
@@ -162,7 +202,7 @@ export const InteractiveForm: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 4. Roof Space Input */}
+        {/* 5. Roof Space Input */}
         <div>
           <div className="flex justify-between items-center mb-1.5">
             <label htmlFor="f-roofSpace" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
@@ -267,6 +307,21 @@ export const InteractiveForm: React.FC<Props> = ({
               </div>
 
             </div>
+
+            {/* Premium direct PDF report downloader */}
+            {isCalculated && (
+              <button
+                type="button"
+                onClick={onDownloadPDF}
+                className="w-full mt-3 group relative overflow-hidden rounded-lg border border-sky-500/30 bg-sky-950/20 px-4 py-2.5 text-xs font-mono font-bold tracking-widest text-sky-400 backdrop-blur-md transition-all duration-300 hover:border-sky-400 hover:bg-sky-950/40 hover:text-sky-300 hover:shadow-[0_0_20px_rgba(14,165,233,0.15)] flex items-center justify-center gap-2 pointer-events-auto cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-y-[1px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                DOWNLOAD ASSESSMENT (PDF)
+              </button>
+            )}
+
           </div>
         )}
 

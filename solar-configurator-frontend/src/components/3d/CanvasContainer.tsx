@@ -15,11 +15,12 @@ interface Props {
   panelCount: number;
 }
 
-export const CanvasContainer: React.FC<Props> = ({ panelCount }) => {
-  const [sunPos, setSunPos] = useState<[number, number, number]>([8, 8, 6]);
+// Child component that safely accesses the R3F useFrame context inside Canvas
+const OrbitSun: React.FC<{
+  setSunPos: React.Dispatch<React.SetStateAction<[number, number, number]>>;
+}> = ({ setSunPos }) => {
   const lastUpdate = useRef(0);
 
-  // Slow sun orbit: recalculate solar position 10 times a second to prevent React bottlenecking
   useFrame((state) => {
     const elapsed = state.clock.getElapsedTime();
     if (elapsed - lastUpdate.current > 0.1) {
@@ -31,6 +32,12 @@ export const CanvasContainer: React.FC<Props> = ({ panelCount }) => {
       setSunPos([x, y, z]);
     }
   });
+
+  return null;
+};
+
+export const CanvasContainer: React.FC<Props> = ({ panelCount }) => {
+  const [sunPos, setSunPos] = useState<[number, number, number]>([8, 8, 6]);
 
   return (
     <Canvas
@@ -47,6 +54,8 @@ export const CanvasContainer: React.FC<Props> = ({ panelCount }) => {
         toneMappingExposure: 1.2
       }}
     >
+      {/* Safe child component to run the R3F loop */}
+      <OrbitSun setSunPos={setSunPos} />
       {/* Fog coordinates for realistic atmospheric twilight depth */}
       <fog attach="fog" args={['#05080c', 16, 36]} />
 

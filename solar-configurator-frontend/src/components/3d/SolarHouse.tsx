@@ -8,7 +8,8 @@ interface Props {
 }
 
 export const SolarHouse: React.FC<Props> = ({ panelCount }) => {
-  const count = panelCount || 0;
+  // Dynamic panel count capped at a physical maximum of 16 to fit perfectly on the upper terrace
+  const count = Math.min(panelCount || 0, 16);
   const houseRef = useRef<THREE.Group>(null);
 
   // Dynamic grid math
@@ -29,13 +30,13 @@ export const SolarHouse: React.FC<Props> = ({ panelCount }) => {
       {/* 3. DETAILED ELECTRICAL CONDUITS & ENERGY FEEDBACK */}
       <HouseConduits active={count > 0} />
 
-      {/* 4. ULTRA-REALISTIC PANEL ASSEMBLY ON THE FLAT ROOF */}
-      <group position={[0, 1.62, -0.2]}>
+      {/* 4. ULTRA-REALISTIC PANEL ASSEMBLY ON THE HIGHEST FLAT ROOF (Capped at maximum physical capacity of 16) */}
+      <group position={[-1.2, 2.87, -0.4]}>
         {count > 0 ? (
           Array.from({ length: count }).map((_, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
-            // Center solar grid
+            // Center solar grid on the upper terrace
             const x = (col - (cols - 1) / 2) * gapX;
             const z = (row - (rows - 1) / 2) * gapZ;
             return <RealisticPanel key={i} position={[x, 0, z]} index={i} active={true} />;
@@ -142,14 +143,94 @@ const VillaLandscape: React.FC = () => {
         </group>
       </group>
 
-      {/* Background Landscaping Cypress Trees (Casts long evening shadows) */}
-      <LandscapingTree position={[-4.0, -0.2, -1.8]} height={4.2} />
-      <LandscapingTree position={[3.6, -0.2, -2.2]} height={3.9} />
-      <LandscapingTree position={[-4.5, -0.2, 0.8]} height={3.6} />
-      <LandscapingTree position={[4.6, -0.2, 1.4]} height={3.4} />
+      {/* Background Landscaping Cypress Trees (Casts long evening shadows, safe from wall clipping) */}
+      <LandscapingTree position={[-5.6, -0.2, -1.8]} height={4.2} />
+      <LandscapingTree position={[5.2, -0.2, -2.2]} height={3.9} />
+      <LandscapingTree position={[-5.2, -0.2, 0.8]} height={3.6} />
+      <LandscapingTree position={[4.8, -0.2, 1.4]} height={3.4} />
+      {/* Additional landscape trees for an ultra-lush architectural yard */}
+      <LandscapingTree position={[-5.4, -0.2, -3.5]} height={3.8} />
+      <LandscapingTree position={[5.4, -0.2, -3.8]} height={4.1} />
+      <LandscapingTree position={[5.6, -0.2, 2.6]} height={3.1} />
 
       {/* 3D Swaying Grass Particles Field */}
       <GrassField />
+
+      {/* Pathway LED Lights (Turn on automatically as night falls) */}
+      <PathwayLights />
+    </group>
+  );
+};
+
+/* Reusable LED Walkway Bollard Pathway Lights (Diurnal Dynamic Control) */
+const PathwayLights: React.FC = () => {
+  const lightsList = useRef<THREE.PointLight[]>([]);
+
+  useFrame((state) => {
+    const elapsed = state.clock.getElapsedTime();
+    const time = elapsed * 0.035;
+    const sunY = 4.5 + Math.sin(time * 0.5) * 3.5;
+    
+    // Light turns on gradually as night falls (sunY drops)
+    const targetIntensity = Math.max(0, Math.min(1.2, (4.5 - sunY) * 0.6));
+    
+    lightsList.current.forEach((light) => {
+      if (light) {
+        light.intensity = targetIntensity;
+      }
+    });
+  });
+
+  const positions = [
+    [-2.4, 3.85],
+    [-2.3, 4.45],
+    [-2.1, 5.05],
+    [-1.9, 5.65],
+    [-1.7, 6.25]
+  ];
+
+  return (
+    <group>
+      {positions.map((pos, idx) => {
+        const x = pos[0];
+        const z = pos[1];
+        return (
+          <group key={idx} position={[x, -0.21, z]}>
+            {/* Dark metal bollard post */}
+            <mesh position={[0, 0.12, 0]} castShadow>
+              <cylinderGeometry args={[0.015, 0.018, 0.24, 8]} />
+              <meshStandardMaterial color="#334155" roughness={0.6} />
+            </mesh>
+            {/* LED Light source housing (Translucent glow) */}
+            <mesh position={[0, 0.24, 0]}>
+              <cylinderGeometry args={[0.018, 0.018, 0.03, 8]} />
+              <meshStandardMaterial 
+                color="#fef08a" 
+                emissive="#eab308" 
+                emissiveIntensity={1.5}
+                roughness={0.1} 
+              />
+            </mesh>
+            {/* Sleek top cover */}
+            <mesh position={[0, 0.26, 0]}>
+              <cylinderGeometry args={[0.022, 0.018, 0.01, 8]} />
+              <meshStandardMaterial color="#0f172a" roughness={0.5} />
+            </mesh>
+            {/* Cast soft physical light downwards onto pathway stones */}
+            <pointLight
+              ref={(el) => {
+                if (el) lightsList.current[idx] = el;
+              }}
+              position={[0, 0.24, 0]}
+              distance={1.8}
+              decay={2.0}
+              color="#fef08a"
+              intensity={0}
+              castShadow
+            />
+          </group>
+        );
+      })}
     </group>
   );
 };
@@ -227,7 +308,7 @@ const ModernVilla: React.FC = () => {
 
       {/* Concrete Entry Stairs */}
       {[-2.0, -0.05, 3.25].map((yOff, i) => (
-        <mesh key={i} position={[-1.8, -0.05 + i * 0.1, 3.2 + i * 0.25] as [number, number, number]} receiveShadow castShadow>
+        <mesh key={i} position={[-1.8, -0.045 - i * 0.06, 3.2 + i * 0.25] as [number, number, number]} receiveShadow castShadow>
           <boxGeometry args={[1.8, 0.1, 0.5]} />
           <meshStandardMaterial color="#cbd5e1" map={concreteTex} roughness={0.8} />
         </mesh>
@@ -286,21 +367,41 @@ const ModernVilla: React.FC = () => {
         <mesh castShadow>
           <boxGeometry args={[1.2, 1.2, 0.04]} />
           <meshPhysicalMaterial
-            color="#cbd5e1"
+            color="#090d16"
             transparent
-            opacity={0.25}
-            roughness={0.01}
-            metalness={0.9}
-            transmission={0.95}
-            thickness={0.05}
-            envMapIntensity={3.0}
+            opacity={0.9}
+            roughness={0.02}
+            metalness={0.98}
+            transmission={0.0}
+            clearcoat={1.0}
+            clearcoatRoughness={0.0}
+            reflectivity={1.0}
+            envMapIntensity={4.5}
           />
         </mesh>
-        {/* Frame profile */}
-        <mesh>
-          <boxGeometry args={[1.22, 1.22, 0.06]} />
-          <meshBasicMaterial color="#0f172a" wireframe />
-        </mesh>
+        {/* Premium Solid Architectural Picture Window Frame (Left, Right, Top, Bottom) */}
+        <group>
+          {/* Top Frame */}
+          <mesh position={[0, 0.58, 0.01]} castShadow>
+            <boxGeometry args={[1.24, 0.04, 0.06]} />
+            <meshStandardMaterial color="#0f172a" roughness={0.4} metalness={0.5} />
+          </mesh>
+          {/* Bottom Frame */}
+          <mesh position={[0, -0.58, 0.01]} castShadow>
+            <boxGeometry args={[1.24, 0.04, 0.06]} />
+            <meshStandardMaterial color="#0f172a" roughness={0.4} metalness={0.5} />
+          </mesh>
+          {/* Left Frame */}
+          <mesh position={[-0.58, 0, 0.01]} castShadow>
+            <boxGeometry args={[0.04, 1.12, 0.06]} />
+            <meshStandardMaterial color="#0f172a" roughness={0.4} metalness={0.5} />
+          </mesh>
+          {/* Right Frame */}
+          <mesh position={[0.58, 0, 0.01]} castShadow>
+            <boxGeometry args={[0.04, 1.12, 0.06]} />
+            <meshStandardMaterial color="#0f172a" roughness={0.4} metalness={0.5} />
+          </mesh>
+        </group>
       </group>
 
       {/* Cantilever Architectural Glass Balcony */}
@@ -365,10 +466,12 @@ const HouseConduits: React.FC<ConduitProps> = ({ active }) => {
     lineGlow.current.opacity = targetOpacity;
   });
 
-  // Routing spline: from solar grid on roof (Z=-0.2, Y=1.55) down wall inside, exits into charger conduit.
+  // Routing spline: from solar grid on the highest roof (Z=-0.4, Y=2.82) down wall inside, exits into charger conduit.
   const conduitPoints = useMemo(() => {
     return [
-      new THREE.Vector3(1.8, 1.58, -0.2),  // Roof cable bundle origin
+      new THREE.Vector3(1.0, 2.82, -0.4),  // Start at highest roof edge
+      new THREE.Vector3(1.8, 2.80, -0.4),  // Run along cantilever edge
+      new THREE.Vector3(1.8, 1.58, -0.2),  // Down to lower roof deck
       new THREE.Vector3(2.4, 1.54, -0.2),  // Route over deck trim
       new THREE.Vector3(2.4, 1.54, 1.2),   // Run along roof deck edge
       new THREE.Vector3(3.6, 1.52, 1.2),   // Over garage roof frame
@@ -464,10 +567,7 @@ const RealisticPanel: React.FC<RealisticPanelProps> = ({ position, index, active
   const elapsed = useRef(0);
   const targetY = position[1];
 
-  // Load the silicon wafer AI texture map
-  const solarTex = useTexture('/textures/solar_cell.png');
-
-  // Landing sequence
+// Landing sequence
   useFrame((_, dt) => {
     if (!groupRef.current) return;
     elapsed.current += dt;
@@ -497,14 +597,13 @@ const RealisticPanel: React.FC<RealisticPanelProps> = ({ position, index, active
       <mesh castShadow receiveShadow rotation={[angleTilt, 0, 0]}>
         <boxGeometry args={[1.12, 0.022, 0.72]} />
         <meshPhysicalMaterial
-          color="#ffffff"
-          map={solarTex}
-          roughness={0.04}
-          metalness={0.96}
+          color="#080e1a"
+          roughness={0.03}
+          metalness={0.98}
           clearcoat={1.0}
           clearcoatRoughness={0.02}
           reflectivity={1.0}
-          envMapIntensity={3.2}
+          envMapIntensity={4.0}
         />
       </mesh>
 
