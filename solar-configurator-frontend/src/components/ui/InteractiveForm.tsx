@@ -8,6 +8,9 @@ interface Props {
   onCalculate: () => void;
   isCalculated: boolean;
   isCalculating: boolean;
+  timeOfDay: number;
+  setTimeOfDay: (t: number) => void;
+  setIsManualTime: (m: boolean) => void;
 }
 
 export const InteractiveForm: React.FC<Props> = ({ 
@@ -16,7 +19,10 @@ export const InteractiveForm: React.FC<Props> = ({
   metrics, 
   onCalculate, 
   isCalculated, 
-  isCalculating 
+  isCalculating,
+  timeOfDay,
+  setTimeOfDay,
+  setIsManualTime
 }) => {
   const [activeField, setActiveField] = useState<string | null>(null);
 
@@ -40,6 +46,8 @@ export const InteractiveForm: React.FC<Props> = ({
   };
 
   const isFormValid = formData.name.trim().length > 0 && 
+                      formData.email.trim().length > 0 && 
+                      formData.phone.trim().length > 0 && 
                       formData.monthlyBill.trim().length > 0 && 
                       formData.roofSpace.trim().length > 0;
 
@@ -47,10 +55,21 @@ export const InteractiveForm: React.FC<Props> = ({
     return val ? `₹${Math.round(val).toLocaleString('en-IN')}` : '—';
   };
 
+  // Helper to convert float hours (e.g. 17.5) into AM/PM digital clock string
+  const formatTime = (h: number): string => {
+    const totalMinutes = Math.round(h * 60);
+    const hh = Math.floor(totalMinutes / 60) % 24;
+    const mm = totalMinutes % 60;
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    const displayHours = hh % 12 === 0 ? 12 : hh % 12;
+    const displayMinutes = mm.toString().padStart(2, '0');
+    return `${displayHours.toString().padStart(2, '0')}:${displayMinutes} ${ampm}`;
+  };
+
   return (
-    <div id="dpr-customer-form" className="w-full">
+    <div id="dpr-customer-form" className="w-full text-mono">
       {/* Brand Header Inside Card */}
-      <div className="mb-6 pb-4 border-b border-white/5">
+      <div className="mb-5 pb-3 border-b border-white/5">
         <h3 className="text-xs font-mono font-bold tracking-widest text-sky-400 uppercase">
           CUSTOMER CONFIGURATION
         </h3>
@@ -59,11 +78,11 @@ export const InteractiveForm: React.FC<Props> = ({
         </p>
       </div>
 
-      <div className="space-y-4.5">
+      <div className="space-y-4">
         {/* 1. Name Input */}
         <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label htmlFor="f-name" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
+          <div className="flex justify-between items-center mb-1">
+            <label htmlFor="f-name" className="text-[10px] font-mono tracking-wider uppercase text-slate-400">
               Customer Name
             </label>
             <span className={`field-status-badge ${
@@ -91,48 +110,84 @@ export const InteractiveForm: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 2. Location Input */}
+        {/* 2. Email Input */}
         <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label htmlFor="f-city" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
-              Project Location
+          <div className="flex justify-between items-center mb-1">
+            <label htmlFor="f-email" className="text-[10px] font-mono tracking-wider uppercase text-slate-400">
+              Email Address
             </label>
             <span className={`field-status-badge ${
-              getFieldStatus('city', formData.city) === 'READY ✓' ? 'badge-ready' :
-              getFieldStatus('city', formData.city) === 'TYPING...' ? 'badge-typing' :
+              getFieldStatus('email', formData.email) === 'READY ✓' ? 'badge-ready' :
+              getFieldStatus('email', formData.email) === 'TYPING...' ? 'badge-typing' :
               'badge-requesting'
             }`}>
-              {getFieldStatus('city', formData.city)}
+              {getFieldStatus('email', formData.email)}
             </span>
           </div>
           <div className="config-input-wrapper">
             <input
-              id="f-city"
-              type="text"
-              name="city"
-              value={formData.city}
+              id="f-email"
+              type="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
-              onFocus={() => handleFocus('city')}
+              onFocus={() => handleFocus('email')}
               onBlur={handleBlur}
-              placeholder="Navsari, Gujarat"
+              placeholder="e.g. rahul@example.com"
               className="config-input"
               autoComplete="off"
               spellCheck={false}
             />
-            {/* Location Pin Suffix */}
+            {/* Email Icon Suffix */}
             <div className="absolute right-4 flex items-center pointer-events-none text-slate-500">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
           </div>
         </div>
 
-        {/* 3. Monthly Bill Input */}
+        {/* 3. Phone Input */}
         <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label htmlFor="f-monthlyBill" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
+          <div className="flex justify-between items-center mb-1">
+            <label htmlFor="f-phone" className="text-[10px] font-mono tracking-wider uppercase text-slate-400">
+              Phone Number
+            </label>
+            <span className={`field-status-badge ${
+              getFieldStatus('phone', formData.phone) === 'READY ✓' ? 'badge-ready' :
+              getFieldStatus('phone', formData.phone) === 'TYPING...' ? 'badge-typing' :
+              'badge-requesting'
+            }`}>
+              {getFieldStatus('phone', formData.phone)}
+            </span>
+          </div>
+          <div className="config-input-wrapper">
+            <input
+              id="f-phone"
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              onFocus={() => handleFocus('phone')}
+              onBlur={handleBlur}
+              placeholder="e.g. +91 98765 43210"
+              className="config-input"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            {/* Phone Icon Suffix */}
+            <div className="absolute right-4 flex items-center pointer-events-none text-slate-500">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Monthly Bill Input */}
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <label htmlFor="f-monthlyBill" className="text-[10px] font-mono tracking-wider uppercase text-slate-400">
               Avg. Monthly Bill
             </label>
             <span className={`field-status-badge ${
@@ -162,10 +217,10 @@ export const InteractiveForm: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 4. Roof Space Input */}
+        {/* 5. Roof Space Input */}
         <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label htmlFor="f-roofSpace" className="text-[11px] font-mono tracking-wider uppercase text-slate-400">
+          <div className="flex justify-between items-center mb-1">
+            <label htmlFor="f-roofSpace" className="text-[10px] font-mono tracking-wider uppercase text-slate-400">
               Available Roof Space
             </label>
             <span className={`field-status-badge ${
@@ -195,8 +250,34 @@ export const InteractiveForm: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* 6. INTERACTIVE SUNLIGHT SLIDER */}
+        <div className="pt-1.5 pb-2">
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-[10px] font-mono tracking-wider uppercase text-slate-400">
+              Sunlight / Time of Day
+            </label>
+            <span className="text-[10px] font-bold text-sky-400 bg-sky-950/60 border border-sky-800/40 px-2 py-0.5 rounded-full transition-all duration-300 font-mono">
+              {formatTime(timeOfDay)}
+            </span>
+          </div>
+          <div className="flex items-center px-1">
+            <input
+              type="range"
+              min="0"
+              max="24"
+              step="0.1"
+              value={timeOfDay}
+              onChange={(e) => {
+                setIsManualTime(true);
+                setTimeOfDay(parseFloat(e.target.value));
+              }}
+              className="w-full h-1.5 bg-slate-800/90 rounded-lg appearance-none cursor-pointer accent-sky-400 transition-all focus:outline-none"
+            />
+          </div>
+        </div>
+
         {/* Submit Estimate Button */}
-        <div className="pt-2">
+        <div className="pt-1">
           <button
             type="button"
             onClick={onCalculate}
@@ -225,7 +306,7 @@ export const InteractiveForm: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* COMPACT METRIC ESTIMATES READOUT SECTION (Reveals inside the card when computed) */}
+        {/* COMPACT METRIC ESTIMATES READOUT SECTION */}
         {(isCalculated || isCalculating) && (
           <div className="animate-slide-up pt-4 mt-2 border-t border-white/5 space-y-3">
             <h4 className="text-[10px] font-mono font-bold tracking-wider text-sky-400 uppercase">
@@ -264,6 +345,34 @@ export const InteractiveForm: React.FC<Props> = ({
                 <span className="text-xs font-bold font-mono text-amber-400 mt-1">
                   {metrics.roiYears > 0 ? `${metrics.roiYears} Yrs` : '—'}
                 </span>
+              </div>
+
+              {/* Est. Savings */}
+              <div className="compact-stat-card">
+                <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">Est. Savings</span>
+                <span className="text-xs font-bold font-mono text-emerald-400 mt-1">
+                  {metrics.savingsPerMonth > 0 ? `₹${Math.round(metrics.savingsPerMonth * 12).toLocaleString('en-IN')}/Yr` : '—'}
+                </span>
+              </div>
+
+              {/* CO2 Saved */}
+              <div className="compact-stat-card">
+                <div className="flex justify-between items-center w-full">
+                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">CO2 Saved</span>
+                  {metrics.co2Offset > 0 && (
+                    <span className="text-[8px] bg-emerald-950/60 border border-emerald-800/40 text-emerald-400 px-1 rounded font-bold font-mono select-none leading-none pt-0.5 pb-0.5">
+                      ECO
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs font-bold font-mono text-emerald-400 mt-1">
+                  {metrics.co2Offset > 0 ? `${metrics.co2Offset.toFixed(1)} t/Yr` : '—'}
+                </span>
+                {metrics.co2Offset > 0 && (
+                  <span className="text-[8px] text-slate-500/80 font-mono mt-0.5">
+                    🌳 ~{Math.round(metrics.co2Offset * 45)} Trees
+                  </span>
+                )}
               </div>
 
             </div>

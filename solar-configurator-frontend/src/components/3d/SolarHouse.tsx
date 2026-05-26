@@ -5,9 +5,10 @@ import * as THREE from 'three';
 
 interface Props {
   panelCount: number;
+  isNight: boolean;
 }
 
-export const SolarHouse: React.FC<Props> = ({ panelCount }) => {
+export const SolarHouse: React.FC<Props> = React.memo(({ panelCount, isNight }) => {
   const count = panelCount || 0;
   const houseRef = useRef<THREE.Group>(null);
 
@@ -20,11 +21,11 @@ export const SolarHouse: React.FC<Props> = ({ panelCount }) => {
 
   return (
     <group ref={houseRef} position={[0, -1.0, 0]}>
-      {/* 1. ARCHITECTURAL SCENARIO LANDSCAPING (Grass ground, Stepping stones, planters, trees) */}
-      <VillaLandscape />
+      {/* 1. ARCHITECTURAL SCENARIO LANDSCAPING (Grass ground, Stepping stones, planters, trees, path lights) */}
+      <VillaLandscape isNight={isNight} />
 
       {/* 2. MAIN MODERN VILLA ARCHITECTURE */}
-      <ModernVilla />
+      <ModernVilla isNight={isNight} />
 
       {/* 3. DETAILED ELECTRICAL CONDUITS & ENERGY FEEDBACK */}
       <HouseConduits active={count > 0} />
@@ -46,12 +47,16 @@ export const SolarHouse: React.FC<Props> = ({ panelCount }) => {
       </group>
     </group>
   );
-};
+});
 
 /* ═══════════════════════════════════════════════════════════════
-   ARCHITECTURAL LANDSCAPING (Grass ground plane, walkways, trees)
+   ARCHITECTURAL LANDSCAPING (Grass, path lights, planters, trees)
    ═══════════════════════════════════════════════════════════════ */
-const VillaLandscape: React.FC = () => {
+interface LandscapeProps {
+  isNight: boolean;
+}
+
+const VillaLandscape: React.FC<LandscapeProps> = ({ isNight }) => {
   const [concreteTex, grassTex] = useTexture([
     '/textures/concrete_wall.png',
     '/textures/grass_lawn.png'
@@ -61,16 +66,23 @@ const VillaLandscape: React.FC = () => {
     concreteTex.wrapS = concreteTex.wrapT = THREE.RepeatWrapping;
     concreteTex.repeat.set(4, 2.5);
 
-    // Repeated dense tiling for realistic lawn grass blades details
+    // Repeated dense tiling for realistic lawn grass blades details across infinite landscape
     grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping;
-    grassTex.repeat.set(16, 16);
+    grassTex.repeat.set(28, 28);
   }, [concreteTex, grassTex]);
+
+  // Path lights coordinates along stepping stones path
+  const pathLightCoords: [number, number, number][] = [
+    [-1.0, -0.2, 4.15],
+    [-0.9, -0.2, 5.0],
+    [-0.6, -0.2, 5.9]
+  ];
 
   return (
     <group>
-      {/* Lush AI-Textured Grass Ground Plane */}
+      {/* Lush AI-Textured Grass Ground Plane - Expanded to 70x70 to merge horizon seamlessly */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.21, 0]} receiveShadow>
-        <planeGeometry args={[45, 45]} />
+        <planeGeometry args={[70, 70]} />
         <meshStandardMaterial map={grassTex} roughness={0.92} metalness={0.05} />
       </mesh>
 
@@ -90,6 +102,35 @@ const VillaLandscape: React.FC = () => {
         ))}
       </group>
 
+      {/* AUTOMATIC NIGHT LANDSCAPE PATHWAY LIGHTS */}
+      {pathLightCoords.map((coord, idx) => (
+        <group key={idx} position={coord}>
+          {/* Post pillar */}
+          <mesh castShadow position={[0, 0.12, 0]}>
+            <cylinderGeometry args={[0.015, 0.018, 0.24, 8]} />
+            <meshStandardMaterial color="#334155" metalness={0.7} roughness={0.4} />
+          </mesh>
+          {/* Glowing cap */}
+          <mesh position={[0, 0.24, 0]}>
+            <sphereGeometry args={[0.025, 8, 8]} />
+            <meshBasicMaterial 
+              color={isNight ? "#f59e0b" : "#475569"} 
+              toneMapped={false} 
+            />
+          </mesh>
+          {/* Soft Amber Light Pool on the walkway and grass (optimized to disable shadow-casting) */}
+          {isNight && (
+            <pointLight 
+              position={[0, 0.26, 0]} 
+              intensity={0.65} 
+              distance={2.4} 
+              decay={2.0} 
+              color="#f59e0b" 
+            />
+          )}
+        </group>
+      ))}
+
       {/* Concrete Planter Box 1 (next to porch entry steps) */}
       <group position={[-0.6, -0.12, 3.1]}>
         {/* Planter frame */}
@@ -102,7 +143,7 @@ const VillaLandscape: React.FC = () => {
           <boxGeometry args={[0.67, 0.02, 0.67]} />
           <meshStandardMaterial color="#1c1917" roughness={0.95} />
         </mesh>
-        {/* Shrub foliage clusters */}
+        {/* Shrub foliage and Marigold Flowers */}
         <group position={[0, 0.18, 0]}>
           <mesh castShadow>
             <dodecahedronGeometry args={[0.16, 1]} />
@@ -116,6 +157,14 @@ const VillaLandscape: React.FC = () => {
             <dodecahedronGeometry args={[0.13, 1]} />
             <meshStandardMaterial color="#15803d" roughness={0.9} />
           </mesh>
+          
+          {/* PBR Marigold Flower Blooms */}
+          {[[0.08, 0.08, 0.06], [-0.08, 0.06, -0.08], [0.03, 0.09, -0.04]].map((flowerPos, fIdx) => (
+            <mesh key={`f1-${fIdx}`} position={flowerPos as [number, number, number]} castShadow>
+              <sphereGeometry args={[0.028, 6, 6]} />
+              <meshStandardMaterial color={fIdx % 2 === 0 ? "#ea580c" : "#f59e0b"} roughness={0.8} />
+            </mesh>
+          ))}
         </group>
       </group>
 
@@ -134,19 +183,34 @@ const VillaLandscape: React.FC = () => {
         {/* Flower bushes row */}
         <group position={[0, 0.18, 0]}>
           {[-0.35, 0, 0.35].map((xOff, idx) => (
-            <mesh key={idx} position={[xOff, 0, 0]} castShadow>
-              <dodecahedronGeometry args={[0.14, 1]} />
-              <meshStandardMaterial color={idx === 1 ? "#15803d" : "#166534"} roughness={0.9} />
-            </mesh>
+            <group key={idx} position={[xOff, 0, 0]}>
+              <mesh castShadow>
+                <dodecahedronGeometry args={[0.14, 1]} />
+                <meshStandardMaterial color={idx === 1 ? "#15803d" : "#166534"} roughness={0.9} />
+              </mesh>
+              {/* Marigold flowers on bushes */}
+              {[[0, 0.08, 0.04], [-0.05, 0.05, -0.05], [0.05, 0.05, -0.05]].map((fPos, fIdx) => (
+                <mesh key={`f2-${idx}-${fIdx}`} position={fPos as [number, number, number]} castShadow>
+                  <sphereGeometry args={[0.025, 6, 6]} />
+                  <meshStandardMaterial color={fIdx % 2 === 0 ? "#f59e0b" : "#ea580c"} roughness={0.8} />
+                </mesh>
+              ))}
+            </group>
           ))}
         </group>
       </group>
 
-      {/* Background Landscaping Cypress Trees (Casts long evening shadows) */}
+      {/* Background Landscaping Cypress Trees (8 Trees for lush depth) */}
       <LandscapingTree position={[-4.0, -0.2, -1.8]} height={4.2} />
       <LandscapingTree position={[3.6, -0.2, -2.2]} height={3.9} />
       <LandscapingTree position={[-4.5, -0.2, 0.8]} height={3.6} />
       <LandscapingTree position={[4.6, -0.2, 1.4]} height={3.4} />
+
+      {/* Background Forest framing trees */}
+      <LandscapingTree position={[-6.0, -0.2, -4.5]} height={4.8} />
+      <LandscapingTree position={[6.0, -0.2, -5.0]} height={4.5} />
+      <LandscapingTree position={[-2.0, -0.2, -5.5]} height={5.2} />
+      <LandscapingTree position={[2.5, -0.2, -5.8]} height={4.9} />
 
       {/* 3D Swaying Grass Particles Field */}
       <GrassField />
@@ -164,8 +228,12 @@ const LandscapingTree: React.FC<TreeProps> = ({ position, height }) => {
   const trunkHeight = height * 0.32;
   const foliageHeight = height * 0.68;
 
+  // Generate slight unique organic growth tilts and rotations based on spatial coordinates
+  const rotY = useMemo(() => Math.abs((position[0] * 7.1 + position[2] * 3.7) % (Math.PI * 2)), [position]);
+  const rotX = useMemo(() => ((position[0] * 3.3 + position[2] * 1.9) % 0.08) - 0.04, [position]);
+
   return (
-    <group position={position}>
+    <group position={position} rotation={[rotX, rotY, 0]}>
       {/* Wooden Trunk */}
       <mesh position={[0, trunkHeight / 2, 0]} castShadow>
         <cylinderGeometry args={[0.07, 0.1, trunkHeight, 8]} />
@@ -197,7 +265,96 @@ const LandscapingTree: React.FC<TreeProps> = ({ position, height }) => {
 /* ═══════════════════════════════════════════════════════════════
    ARCHITECTURAL MODERN VILLA MODEL WITH HIGH-FIDELITY TEXTURES
    ═══════════════════════════════════════════════════════════════ */
-const ModernVilla: React.FC = () => {
+/* ═══════════════════════════════════════════════════════════════
+   ARCHITECTURAL WINDOWS WITH SLEEK ALUMINUM FRAMING
+   ═══════════════════════════════════════════════════════════════ */
+interface ArchWindowProps {
+  position: [number, number, number];
+  size: [number, number];
+  panes?: number;
+  rotation?: [number, number, number];
+}
+
+const ArchitecturalWindow: React.FC<ArchWindowProps> = ({ 
+  position, 
+  size, 
+  panes = 2,
+  rotation = [0, 0, 0]
+}) => {
+  const [w, h] = size;
+  const frameThickness = 0.038; // Sleek 3.8cm frames
+  const frameDepth = 0.07;
+  const glassThickness = 0.015;
+
+  return (
+    <group position={position} rotation={rotation}>
+      {/* Outer Border Frames */}
+      {/* Top Frame */}
+      <mesh position={[0, h/2 - frameThickness/2, 0]} castShadow>
+        <boxGeometry args={[w, frameThickness, frameDepth]} />
+        <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.8} />
+      </mesh>
+      {/* Bottom Frame */}
+      <mesh position={[0, -h/2 + frameThickness/2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, frameThickness, frameDepth]} />
+        <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.8} />
+      </mesh>
+      {/* Left Frame */}
+      <mesh position={[-w/2 + frameThickness/2, 0, 0]} castShadow>
+        <boxGeometry args={[frameThickness, h, frameDepth]} />
+        <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.8} />
+      </mesh>
+      {/* Right Frame */}
+      <mesh position={[w/2 - frameThickness/2, 0, 0]} castShadow>
+        <boxGeometry args={[frameThickness, h, frameDepth]} />
+        <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.8} />
+      </mesh>
+
+      {/* Mullions (dividers) */}
+      {panes > 1 && Array.from({ length: panes - 1 }).map((_, i) => {
+        const xOffset = -w/2 + (w / panes) * (i + 1);
+        return (
+          <mesh key={i} position={[xOffset, 0, 0]} castShadow>
+            <boxGeometry args={[0.02, h - frameThickness * 2, frameDepth * 0.7]} />
+            <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.8} />
+          </mesh>
+        );
+      })}
+
+      {/* Dark interior backing to hide the solid white wall behind the glass and simulate depth */}
+      <mesh position={[0, 0, -0.012]}>
+        <planeGeometry args={[w - frameThickness * 2, h - frameThickness * 2]} />
+        <meshBasicMaterial color="#020617" />
+      </mesh>
+
+      {/* Physical double-sided reflective high-specular glass */}
+      <mesh position={[0, 0, 0.005]}>
+        <boxGeometry args={[w - frameThickness * 2, h - frameThickness * 2, glassThickness]} />
+        <meshPhysicalMaterial
+          color="#e2e8f0"
+          transparent
+          opacity={0.22}
+          roughness={0.01}
+          metalness={0.96}
+          transmission={0.93}
+          thickness={0.06}
+          envMapIntensity={3.2}
+          clearcoat={1.0}
+          clearcoatRoughness={0.02}
+        />
+      </mesh>
+    </group>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   ARCHITECTURAL MODERN VILLA MODEL WITH HIGH-FIDELITY TEXTURES
+   ═══════════════════════════════════════════════════════════════ */
+interface VillaProps {
+  isNight: boolean;
+}
+
+const ModernVilla: React.FC<VillaProps> = ({ isNight }) => {
   // Load PBR Textures
   const [concreteTex, roofTex, woodTex] = useTexture([
     '/textures/concrete_wall.png',
@@ -225,9 +382,9 @@ const ModernVilla: React.FC = () => {
         <meshStandardMaterial color="#0f172a" roughness={0.6} metalness={0.2} map={roofTex} />
       </mesh>
 
-      {/* Concrete Entry Stairs */}
+      {/* Concrete Entry Stairs - Aligned flush with the entrance threshold at Z = 2.8 */}
       {[-2.0, -0.05, 3.25].map((yOff, i) => (
-        <mesh key={i} position={[-1.8, -0.05 + i * 0.1, 3.2 + i * 0.25] as [number, number, number]} receiveShadow castShadow>
+        <mesh key={i} position={[-1.8, -0.05 + i * 0.1, 2.8 + (2 - i) * 0.25] as [number, number, number]} receiveShadow castShadow>
           <boxGeometry args={[1.8, 0.1, 0.5]} />
           <meshStandardMaterial color="#cbd5e1" map={concreteTex} roughness={0.8} />
         </mesh>
@@ -251,16 +408,28 @@ const ModernVilla: React.FC = () => {
         <meshStandardMaterial color="#f1f5f9" map={concreteTex} roughness={0.8} />
       </mesh>
 
-      {/* Warm Oak Pivoting Front Door */}
-      <group position={[-1.8, 0.7, 2.81]}>
+      {/* Warm Oak Decorative Cantilever Accent Wall Panel */}
+      <mesh position={[-2.8, 2.15, 1.81]} castShadow receiveShadow>
+        <boxGeometry args={[1.5, 1.23, 0.03]} />
+        <meshStandardMaterial color="#ffffff" map={woodTex} roughness={0.65} />
+      </mesh>
+
+      {/* Front Entry Door with Frame and Recess - Pushed forward to Z = 2.82 to eliminate Z-fighting */}
+      <group position={[-1.8, 0.7, 2.82]}>
+        {/* Dark Metal Frame */}
         <mesh castShadow>
-          <boxGeometry args={[1.1, 1.35, 0.08]} />
-          <meshStandardMaterial color="#ffffff" map={woodTex} roughness={0.65} metalness={0.05} />
+          <boxGeometry args={[1.2, 1.45, 0.12]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.4} metalness={0.7} />
         </mesh>
-        {/* Brushed Stainless Steel Handle */}
-        <mesh position={[0.4, 0, 0.05]}>
-          <cylinderGeometry args={[0.012, 0.012, 0.5, 8]} />
-          <meshStandardMaterial color="#cbd5e1" roughness={0.2} metalness={0.8} />
+        {/* Warm Oak Pivoting Wood Door Leaf */}
+        <mesh castShadow position={[0, 0, 0.035]}>
+          <boxGeometry args={[1.1, 1.35, 0.06]} />
+          <meshStandardMaterial color="#ffffff" map={woodTex} roughness={0.6} metalness={0.05} />
+        </mesh>
+        {/* Brushed Stainless Steel vertical bar handle */}
+        <mesh position={[0.4, 0, 0.075]}>
+          <cylinderGeometry args={[0.015, 0.015, 0.6, 8]} />
+          <meshStandardMaterial color="#cbd5e1" roughness={0.15} metalness={0.9} />
         </mesh>
       </group>
 
@@ -280,28 +449,48 @@ const ModernVilla: React.FC = () => {
         ))}
       </group>
 
-      {/* Modern Floor-to-Ceiling Ribbon Windows */}
-      {/* Ground Floor Large Window Left */}
-      <group position={[-3.3, 0.75, 2.81]}>
-        <mesh castShadow>
-          <boxGeometry args={[1.2, 1.2, 0.04]} />
-          <meshPhysicalMaterial
-            color="#cbd5e1"
-            transparent
-            opacity={0.25}
-            roughness={0.01}
-            metalness={0.9}
-            transmission={0.95}
-            thickness={0.05}
-            envMapIntensity={3.0}
+      {/* High-Fidelity Solid Architectural Black Aluminum Framed Windows - Offset forward to Z=2.83/1.83/2.43 to prevent Z-fighting */}
+      {/* 1. Ground Floor Living Room Window (Left) */}
+      <ArchitecturalWindow position={[-3.3, 0.75, 2.83]} size={[1.2, 1.2]} panes={2} />
+
+      {/* 2. Ground Floor Dining Room Window (Right of Front Door) */}
+      <ArchitecturalWindow position={[-0.4, 0.75, 2.83]} size={[1.4, 1.2]} panes={3} />
+
+      {/* 3. Upper Floor Master Bedroom Balcony Glass Sliding Door Facade */}
+      <ArchitecturalWindow position={[-1.2, 2.15, 1.83]} size={[3.6, 1.23]} panes={4} />
+
+      {/* 4. Sleek Technical Horizontal Garage Slot Window */}
+      <ArchitecturalWindow position={[2.2, 1.1, 2.43]} size={[1.8, 0.3]} panes={2} />
+
+      {/* Cozy Diurnal Interior Night Lighting */}
+      {isNight && (
+        <group>
+          {/* Main living room warm amber cozy glow */}
+          <pointLight 
+            position={[-2.4, 0.6, 1.2]} 
+            intensity={1.2} 
+            distance={5.0} 
+            decay={1.6} 
+            color="#f59e0b" 
           />
-        </mesh>
-        {/* Frame profile */}
-        <mesh>
-          <boxGeometry args={[1.22, 1.22, 0.06]} />
-          <meshBasicMaterial color="#0f172a" wireframe />
-        </mesh>
-      </group>
+          {/* Upper master bedroom warm amber cozy glow */}
+          <pointLight 
+            position={[-1.2, 2.0, 0.2]} 
+            intensity={1.5} 
+            distance={6.0} 
+            decay={1.6} 
+            color="#f59e0b" 
+          />
+          {/* Technical energy block active high-tech cyan glow */}
+          <pointLight 
+            position={[2.2, 0.8, 1.0]} 
+            intensity={0.8} 
+            distance={4.0} 
+            decay={2.0} 
+            color="#0ea5e9" 
+          />
+        </group>
+      )}
 
       {/* Cantilever Architectural Glass Balcony */}
       <group position={[-1.2, 1.5, 1.82]}>
@@ -462,12 +651,17 @@ interface RealisticPanelProps {
 const RealisticPanel: React.FC<RealisticPanelProps> = ({ position, index, active }) => {
   const groupRef = useRef<THREE.Group>(null);
   const elapsed = useRef(0);
-  const targetY = position[1];
+  const targetY = position[1]; // target is 0 relative to solar grid group
+
+  // Reset landing sequence on updates/remounts
+  useEffect(() => {
+    elapsed.current = 0;
+  }, [position, index]);
 
   // Load the silicon wafer AI texture map
   const solarTex = useTexture('/textures/solar_cell.png');
 
-  // Landing sequence
+  // Landing sequence relative animation
   useFrame((_, dt) => {
     if (!groupRef.current) return;
     elapsed.current += dt;
@@ -478,11 +672,11 @@ const RealisticPanel: React.FC<RealisticPanelProps> = ({ position, index, active
       const progress = Math.min(1.0, localTime * 1.25);
       const ease = 1 - Math.pow(1 - progress, 4); // easeOutQuart
       
-      groupRef.current.position.y = THREE.MathUtils.lerp(3.2, targetY, ease);
+      groupRef.current.position.y = THREE.MathUtils.lerp(3.2, 0, ease);
       groupRef.current.scale.setScalar(ease);
       groupRef.current.rotation.y = THREE.MathUtils.lerp(-0.25, 0, ease);
     } else {
-      groupRef.current.position.y = targetY;
+      groupRef.current.position.y = 0;
       groupRef.current.scale.setScalar(1);
       groupRef.current.rotation.y = 0;
     }
@@ -491,7 +685,7 @@ const RealisticPanel: React.FC<RealisticPanelProps> = ({ position, index, active
   const angleTilt = -0.28; // Tilted angle facing solar noon (~16 deg)
 
   return (
-    <group ref={groupRef} position={[position[0], 3.2, position[2]]} scale={0}>
+    <group ref={groupRef} position={[position[0], 0, position[2]]}>
       
       {/* 1. Monocrystalline Silicon Wafer PBR Surface */}
       <mesh castShadow receiveShadow rotation={[angleTilt, 0, 0]}>
@@ -603,50 +797,111 @@ const RooftopFeasibilityGrid: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   DYNAMIC INSTANCED 3D GRASS FIELD (GPU Optimized Particles)
+   DYNAMIC INSTANCED 3D GRASS FIELD (GPU Wind Shader + 7,500 Blades)
    ═══════════════════════════════════════════════════════════════ */
 const GrassField: React.FC = () => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const count = 2600; // Increased to 2,600 dense grass blade particles for absolute organic yard grounding
+  const count = 7500; // Increased to 7,500 extremely dense organic blades of grass
 
   // Dummy Object3D to update instance matrices
   const tempObject = useMemo(() => new THREE.Object3D(), []);
 
-  // Generate random positions, heights, bends, and rotations
+  // Custom tapered, pre-curved organic blade geometry pivoting from base (Y=0)
+  const grassGeometry = useMemo(() => {
+    const geom = new THREE.PlaneGeometry(1, 1, 1, 3);
+    geom.translate(0, 0.5, 0); // Translate vertices so base sits exactly at local y = 0
+    
+    const pos = geom.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i); // ranges from 0 to 1
+      
+      // Taper equation: full width at base, narrowing parabolically to 0 width at tip
+      const taper = 1.0 - Math.pow(y, 1.6);
+      pos.setX(i, x * taper);
+      
+      // Add natural organic pre-curvature along Z axis based on height
+      const bend = Math.pow(y, 2.0) * 0.12;
+      pos.setZ(i, bend);
+    }
+    geom.computeVertexNormals();
+    return geom;
+  }, []);
+
+  // Generate random positions using smart boundary-aware margin clustering
   const instances = useMemo(() => {
     const data = [];
     const rand = Math.random;
 
+    // Check if coordinates overlap any concrete structures
+    const isInsideHouse = (x: number, z: number) => x > -4.2 && x < 4.2 && z > -3.2 && z < 3.2;
+    const isInsideWalkway = (x: number, z: number) => {
+      if (x > -2.4 && x < -1.2 && z > 3.6 && z < 4.1) return true;
+      if (x > -2.3 && x < -1.1 && z > 4.2 && z < 4.7) return true;
+      if (x > -2.1 && x < -0.9 && z > 4.8 && z < 5.3) return true;
+      if (x > -1.9 && x < -0.7 && z > 5.4 && z < 5.9) return true;
+      if (x > -1.7 && x < -0.5 && z > 6.0 && z < 6.5) return true;
+      return false;
+    };
+    const isInsideStairs = (x: number, z: number) => x > -2.8 && x < -0.8 && z > 2.9 && z < 3.5;
+    const isInsidePlanter1 = (x: number, z: number) => x > -1.05 && x < -0.15 && z > 2.65 && z < 3.55;
+    const isInsidePlanter2 = (x: number, z: number) => x > -4.05 && x < -2.55 && z > 1.95 && z < 2.65;
+
     for (let i = 0; i < count; i++) {
-      // Base distribution across front and side yards
-      let x = (rand() - 0.5) * 13.0;
-      let z = 0.5 + rand() * 5.6;
+      let x = 0;
+      let z = 0;
+      let scaleY = 0.14 + rand() * 0.22; // Organic blade heights: 14cm to 36cm
+      let scaleX = 0.012 + rand() * 0.015;
 
-      // Coordinate checks
-      const inStairs = x > -2.7 && x < -0.9 && z > 2.9 && z < 3.6;
-      const inWalkway = x > -2.0 && x < -0.8 && z > 3.6 && z < 6.5;
-      const inPlanter1 = x > -1.0 && x < -0.2 && z > 2.7 && z < 3.5;
-      const inPlanter2 = x > -4.0 && x < -2.6 && z > 2.0 && z < 2.6;
-      const inHouse = x > -4.1 && x < 3.9 && z > -2.9 && z < 2.5;
-
-      // Realism tweak: We deliberately cluster grass close to the edge borders of pathways/planters
-      if (inStairs || inWalkway || inPlanter1 || inPlanter2 || inHouse) {
-        // Instead of random scattering, push them exactly to the margins of these concrete shapes
-        // This generates thick grass tufts immediately framing all hard concrete edges!
-        const pushX = rand() > 0.5 ? 1.0 : -1.0;
-        const pushZ = rand() > 0.5 ? 1.0 : -1.0;
-        x += pushX * 0.45;
-        z += pushZ * 0.45;
+      const rSelect = rand();
+      if (rSelect < 0.48) {
+        // 48% border clustering: generates hyper-realistic thick grass clumps hugging hard concrete edges!
+        const boundarySelect = rand();
+        if (boundarySelect < 0.35) {
+          // Walkway borders
+          const tZ = 3.6 + rand() * 2.8;
+          const walkwayCenterX = -1.5 - (tZ - 5.0) * 0.2;
+          x = walkwayCenterX + (rand() > 0.5 ? -0.44 : 0.44) + (rand() - 0.5) * 0.12;
+          z = tZ;
+        } else if (boundarySelect < 0.65) {
+          // Planter 1 perimeter
+          const angle = rand() * Math.PI * 2;
+          x = -0.6 + Math.cos(angle) * 0.41 + (rand() - 0.5) * 0.08;
+          z = 3.1 + Math.sin(angle) * 0.41 + (rand() - 0.5) * 0.08;
+        } else if (boundarySelect < 0.88) {
+          // Planter 2 perimeter
+          const angle = rand() * Math.PI * 2;
+          x = -3.3 + Math.cos(angle) * 0.70 + (rand() - 0.5) * 0.08;
+          z = 2.3 + Math.sin(angle) * 0.32 + (rand() - 0.5) * 0.08;
+        } else {
+          // Front villa stucco concrete foundation edge
+          x = (rand() - 0.5) * 8.2;
+          z = 3.12 + (rand() - 0.5) * 0.1;
+        }
+        scaleY = 0.22 + rand() * 0.16; // Edge grass grows slightly taller and lush
+      } else if (rSelect < 0.85) {
+        // 37% Front yard general scattered lawn
+        x = (rand() - 0.5) * 15.0;
+        z = 1.0 + rand() * 6.5;
+      } else {
+        // 15% Left/Right side yards background
+        x = rand() > 0.5 ? 4.5 + rand() * 4.0 : -4.5 - rand() * 4.0;
+        z = (rand() - 0.5) * 6.0;
       }
 
-      const scaleY = 0.16 + rand() * 0.24; // Organic height: 16cm to 40cm
-      const scaleX = 0.012 + rand() * 0.015; // Width
-      
-      // Stand base exactly on the grass plane at Y = -0.21
-      const y = -0.21 + scaleY / 2;
+      // Safe retry loop to prevent grass blades from clipping into solid architectural stone/walls
+      let retries = 5;
+      while (retries > 0 && (isInsideHouse(x, z) || isInsideWalkway(x, z) || isInsideStairs(x, z) || isInsidePlanter1(x, z) || isInsidePlanter2(x, z))) {
+        x += (rand() - 0.5) * 0.7;
+        z += (rand() - 0.5) * 0.7;
+        retries--;
+      }
+
+      // Anchored base sits exactly on grass plane at Y = -0.21
+      const y = -0.21;
       
       const rotY = rand() * Math.PI;
-      const rotX = (rand() - 0.5) * 0.25; // Organic initial lean angle
+      const rotX = (rand() - 0.5) * 0.16; // Organic slight resting tilt angle
 
       data.push({ x, y, z, scaleX, scaleY, rotX, rotY });
     }
@@ -656,11 +911,11 @@ const GrassField: React.FC = () => {
   // Multi-tonal organic grass color palette
   const colors = useMemo(() => {
     const palette = [
-      new THREE.Color('#14532d'), // Deep forest green
-      new THREE.Color('#15803d'), // Lush emerald green
-      new THREE.Color('#16a34a'), // Vibrant spring green
-      new THREE.Color('#854d0e'), // Dry thatch straw yellow accent
-      new THREE.Color('#a3e635'), // Bright new shoot lime green
+      new THREE.Color('#14532d'), // Deep rich forest green
+      new THREE.Color('#15803d'), // Lush healthy emerald green
+      new THREE.Color('#16a34a'), // Vibrant active spring green
+      new THREE.Color('#854d0e'), // Natural dry thatch yellow highlights
+      new THREE.Color('#a3e635'), // Fresh young lime green shoots
     ];
     
     const bladeColors = [];
@@ -678,7 +933,7 @@ const GrassField: React.FC = () => {
     return bladeColors;
   }, []);
 
-  // Initialize initial instance matrices and colors
+  // Static CPU Matrix initializer: Sets translations/rotations once to preserve CPU cycles
   useEffect(() => {
     if (!meshRef.current) return;
     instances.forEach((item, idx) => {
@@ -697,34 +952,57 @@ const GrassField: React.FC = () => {
     }
   }, [instances, colors, tempObject]);
 
-  // Swaying Wind wave simulation
+  // Pass time to GPU shader via custom uniform ref
+  const uniforms = useMemo(() => ({
+    uTime: { value: 0 }
+  }), []);
+
   useFrame((state) => {
-    if (!meshRef.current) return;
-    const time = state.clock.getElapsedTime();
-    
-    instances.forEach((item, idx) => {
-      // Wind wave equation based on time and spatial X coordinate
-      const windAngle = Math.sin(time * 2.8 + item.x * 0.4) * 0.095;
-      
-      tempObject.position.set(item.x, item.y, item.z);
-      // Wind sway on X/Z coordinates
-      tempObject.rotation.set(item.rotX + windAngle, item.rotY, windAngle * 0.5);
-      tempObject.scale.set(item.scaleX, item.scaleY, item.scaleX);
-      tempObject.updateMatrix();
-      
-      meshRef.current!.setMatrixAt(idx, tempObject.matrix);
-    });
-    meshRef.current.instanceMatrix.needsUpdate = true;
+    uniforms.uTime.value = state.clock.getElapsedTime();
   });
 
+  // Inject optimized wind sway equations directly into the GPU Vertex Shader
+  const handleBeforeCompile = (shader: any) => {
+    shader.uniforms.uTime = uniforms.uTime;
+    
+    shader.vertexShader = `
+      uniform float uTime;
+    ` + shader.vertexShader;
+    
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      `
+        #include <begin_vertex>
+        
+        #ifdef USE_INSTANCING
+          // Read instance translation coordinates from 4th column of instanceMatrix
+          vec3 instancePos = vec3(instanceMatrix[3].x, instanceMatrix[3].y, instanceMatrix[3].z);
+          
+          // Spatial wind wave calculation based on coordinates and elapsed time
+          float wind = sin(uTime * 2.8 + instancePos.x * 0.45 + instancePos.z * 0.35) * 0.125;
+          
+          // Sway quadratically with height (local position.y goes from 0 at base to 1 at tip!)
+          float heightFactor = position.y;
+          transformed.x += wind * heightFactor * heightFactor;
+          transformed.z += wind * 0.4 * heightFactor * heightFactor;
+        #endif
+      `
+    );
+  };
+
   return (
-    <instancedMesh ref={meshRef} args={[null as any, null as any, count]} castShadow receiveShadow>
-      {/* Blade Geometry: beveled thin plane geometry */}
-      <planeGeometry args={[1, 1, 1, 3]} />
+    <instancedMesh 
+      ref={meshRef} 
+      geometry={grassGeometry} 
+      args={[null as any, null as any, count]} 
+      castShadow 
+      receiveShadow
+    >
       <meshStandardMaterial 
-        roughness={0.95} 
+        roughness={0.92} 
         side={THREE.DoubleSide} 
         shadowSide={THREE.DoubleSide}
+        onBeforeCompile={handleBeforeCompile}
       />
     </instancedMesh>
   );

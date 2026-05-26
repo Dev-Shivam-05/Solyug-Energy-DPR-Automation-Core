@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CanvasContainer } from './components/3d/CanvasContainer';
 import { InteractiveForm } from './components/ui/InteractiveForm';
 import { useSolarMath } from './hooks/useSolarMath';
@@ -10,6 +10,17 @@ export default function App() {
   const [isCalculated, setIsCalculated] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
 
+  // Time-of-Day states for interactive diurnal solar orbit
+  const [timeOfDay, setTimeOfDay] = useState<number>(17.0); // Default to 5:00 PM sunset golden hour
+  const timeOfDayRef = useRef<number>(17.0);
+  const [isManualTime, setIsManualTime] = useState<boolean>(false);
+
+  // Stable callback to update both the mutable time ref and UI state
+  const handleTimeChange = useCallback((t: number) => {
+    timeOfDayRef.current = t;
+    setTimeOfDay(t);
+  }, []);
+
   // Compute local solar parameters
   const calculatedMetrics = useSolarMath(formData.monthlyBill, formData.roofSpace);
 
@@ -20,6 +31,9 @@ export default function App() {
   const [animatedSubsidy, setAnimatedSubsidy] = useState(0);
   const [animatedNet, setAnimatedNet] = useState(0);
   const [animatedRoi, setAnimatedRoi] = useState(0);
+  const [animatedGeneration, setAnimatedGeneration] = useState(0);
+  const [animatedCo2, setAnimatedCo2] = useState(0);
+  const [animatedSavings, setAnimatedSavings] = useState(0);
 
   const handleCalculate = () => {
     setIsCalculating(true);
@@ -32,6 +46,9 @@ export default function App() {
     setAnimatedSubsidy(0);
     setAnimatedNet(0);
     setAnimatedRoi(0);
+    setAnimatedGeneration(0);
+    setAnimatedCo2(0);
+    setAnimatedSavings(0);
 
     // Simulate real-time rendering logic
     setTimeout(() => {
@@ -58,6 +75,9 @@ export default function App() {
       setAnimatedSubsidy(Math.round(calculatedMetrics.subsidy * ease));
       setAnimatedNet(Math.round(calculatedMetrics.netCost * ease));
       setAnimatedRoi(parseFloat((calculatedMetrics.roiYears * ease).toFixed(1)));
+      setAnimatedGeneration(Math.round(calculatedMetrics.annualGeneration * ease));
+      setAnimatedCo2(parseFloat((calculatedMetrics.co2Offset * ease).toFixed(1)));
+      setAnimatedSavings(Math.round(calculatedMetrics.savingsPerMonth * ease));
 
       if (progress < 1.0) {
         requestAnimationFrame(countUp);
@@ -75,10 +95,10 @@ export default function App() {
     subsidy: animatedSubsidy,
     netCost: animatedNet,
     roiYears: animatedRoi,
-    annualGeneration: calculatedMetrics.annualGeneration,
-    co2Offset: calculatedMetrics.co2Offset,
+    annualGeneration: animatedGeneration,
+    co2Offset: animatedCo2,
     monthlyGeneration: calculatedMetrics.monthlyGeneration,
-    savingsPerMonth: calculatedMetrics.savingsPerMonth
+    savingsPerMonth: animatedSavings
   };
 
   return (
@@ -86,7 +106,12 @@ export default function App() {
       
       {/* 1. DYNAMIC 3D CANVAS VIEWPORT (Takes up full background) */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-auto">
-        <CanvasContainer panelCount={isCalculated || isCalculating ? calculatedMetrics.panelCount : 0} />
+        <CanvasContainer 
+          panelCount={isCalculated || isCalculating ? calculatedMetrics.panelCount : 0} 
+          timeRef={timeOfDayRef}
+          isManualTime={isManualTime}
+          setTimeOfDay={handleTimeChange}
+        />
       </div>
 
       {/* 2. MINIMAL BRANDING HEADER (Top Left) */}
@@ -110,6 +135,9 @@ export default function App() {
               onCalculate={handleCalculate}
               isCalculated={isCalculated}
               isCalculating={isCalculating}
+              timeOfDay={timeOfDay}
+              setTimeOfDay={handleTimeChange}
+              setIsManualTime={setIsManualTime}
             />
           </div>
         </div>
