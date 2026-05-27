@@ -23,7 +23,6 @@ app.use(`/api/v1/health`, healthRouter);
 const frontendDistPath = nodePath.join(__dirname, '../solar-configurator-frontend/dist');
 app.use(express.static(frontendDistPath));
 
-// Custom middleware for fallback SPA routing to completely bypass path-to-regexp wildcard parsing issues in Express v5
 app.use((req, res, next) => {
   if (req.method === 'GET' && !req.path.startsWith('/api')) {
     return res.sendFile(nodePath.join(frontendDistPath, 'index.html'));

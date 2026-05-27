@@ -17,7 +17,6 @@ export const dispatchBackgroundTasks = async (leadData) => {
   // TASK B: Dispatch structured JSON to n8n webhook for internal alerts
   // ------------------------------------------------------------------------
   try {
-    // Format payload specifically for n8n's expected webhook structure
     const n8nPayload = {
       event: "new_residential_lead",
       timestamp: new Date().toISOString(),
@@ -33,8 +32,6 @@ export const dispatchBackgroundTasks = async (leadData) => {
       },
     };
 
-    // Fire webhook to local n8n instance with timeout to prevent hanging
-    // Using native fetch (Node 18+) - no external axios dependency needed
     const response = await fetch(process.env.N8N_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -42,7 +39,6 @@ export const dispatchBackgroundTasks = async (leadData) => {
       timeout: 5000, // Fail fast if n8n is unresponsive
     });
 
-    // If webhook succeeded, update the lead's dispatch status in MongoDB
     if (response.ok) {
       await leadData.updateOne({
         "dispatchStatus.n8nWebhookSent": true,
@@ -55,11 +51,6 @@ export const dispatchBackgroundTasks = async (leadData) => {
       );
     }
   } catch (error) {
-    // Catch network errors, timeouts, etc. - log and continue
-    // The lead remains in PENDING_DISPATCH, recoverable by the safety-net cron job
     console.error(`[n8n Dispatch Error] Lead ${leadData._id}:`, error.message);
   }
-
-  // Note: We do NOT await or return the result of background tasks
-  // The controller has already sent the HTTP response; this runs detached
 };

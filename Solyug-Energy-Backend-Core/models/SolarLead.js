@@ -2,9 +2,8 @@ import mongoose from "mongoose";
 
 const SolarLeadSchema = new mongoose.Schema(
   {
-    // 1. The Raw Client Data (Exactly as validated)
     clientProfile: {
-      name: { type: String, required: true, trim: true }, // trim removes accidental whitespace
+      name: { type: String, required: true, trim: true },
       phone: {
         type: String,
         required: true,
@@ -30,23 +29,21 @@ const SolarLeadSchema = new mongoose.Schema(
       roofOwnership: { type: String, enum: ["Own", "Rented"], required: true },
     },
 
-    // 2. The Raw Structural Inputs
     siteInputs: {
       monthlyBill: {
         type: Number,
         required: true,
         min: [0, "Bill cannot be negative"],
-        max: [100000, "Bill seems unrealistically high"], // Prevent data entry errors
+        max: [100000, "Bill seems unrealistically high"],
       },
       roofAreaSqFt: {
         type: Number,
         required: true,
         min: [0, "Area cannot be negative"],
-        max: [10000, "Roof area seems unrealistically large"], // 10k sq ft = ~930 sq m, reasonable max for residential
+        max: [10000, "Roof area seems unrealistically large"],
       },
     },
 
-    // 3. The Math Engine Outputs (The Recommendations)
     solarRecommendations: {
       systemCapacityKw: { type: Number, required: true },
       monthlyGenerationUnits: { type: Number, required: true },
@@ -56,7 +53,6 @@ const SolarLeadSchema = new mongoose.Schema(
       lifetimeNetProfitInr: { type: Number, required: true },
     },
 
-    // 4. The Outbox / Dispatch Safety Net
     dispatchStatus: {
       state: {
         type: String,
@@ -77,20 +73,18 @@ const SolarLeadSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true }, // Allow virtuals to appear in JSON output
+    toJSON: { virtuals: true },
     toObject: { virtuals: true },
   },
 );
 
-// Add a virtual property to expose _id as 'id' for frontend convenience
 SolarLeadSchema.virtual("id").get(function () {
   return this._id.toHexString();
 });
 
-// High-performance indexes for the operations dashboard
 SolarLeadSchema.index({ "dispatchStatus.state": 1, createdAt: -1 });
 SolarLeadSchema.index({ "solarRecommendations.systemCapacityKw": -1 });
-// Add a compound index for duplicate detection (phone + email)
+
 SolarLeadSchema.index(
   { "clientProfile.phone": 1, "clientProfile.email": 1 },
   { unique: false },
