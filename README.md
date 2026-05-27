@@ -393,9 +393,3 @@ shivam.bhadoriya@example.com | +91 98765 43210
 <p align="center">
   <sub>Built with ♥ for Solyug Energy by <b>Shivam Bhadoriya</b> & <b>Nurul Shaikh</b> • <a href="https://github.com/Dev-Shivam-05/Solyug-Energy-DPR-Automation-Core/blob/main/LICENSE">MIT License</a></sub>
 </p>
-
-<p align="center">
-  <img src="https://komarev.com/ghpvc/?username=Dev-Shivam-05&label=Project%20Views&color=10B981&style=flat-square&repo=Solyug-Energy-DPR-Automation-Core" alt="views" />
-  <img src="https://img.shields.io/github/stars/Dev-Shivam-05/Solyug-Energy-DPR-Automation-Core?style=flat-square&color=F59E0B" alt="stars" />
-  <img src="https://img.shields.io/github/forks/Dev-Shivam-05/Solyug-Energy-DPR-Automation-Core?style=flat-square&color=3B82F6" alt="forks" />
-</p>
